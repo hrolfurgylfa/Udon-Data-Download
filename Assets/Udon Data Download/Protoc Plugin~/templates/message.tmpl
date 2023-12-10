@@ -1,0 +1,87 @@
+    {{/* SPDX-License-Identifier: MIT */ -}}
+
+    public class {{ $.Name }}
+    {
+        public static DataToken Parse(byte[] bytes, ref int i, int end)
+        {
+            var obj = new DataDictionary();
+            obj["__type"] = "{{ $.Name }}";
+
+            // Create a DataList for all multi fields.
+            {{ range $field := .Fields -}}
+                {{- if $field.Multiple -}}
+                    obj["{{ $field.Name }}"] = new DataList();
+                {{- end -}}
+            {{- end }}
+
+            while (i < end)
+            {
+                var fieldPrefix = ProtobufUtil.DecodeVarInt(bytes, ref i);
+                var wireType = (byte)(fieldPrefix & 0x7);
+                var fieldNumber = fieldPrefix >> 3;
+
+                // Parse the field
+                DataToken token = new DataToken();
+                bool allowMultiple;
+                string key;
+                switch (fieldNumber)
+                {
+                    {{ range $field := .Fields -}}
+                    case {{ $field.Number }}:
+                        key = "{{ $field.Name }}";
+                        allowMultiple = {{ $field.Multiple }};
+                        if (wireType != {{ $field.Type.WireType }})
+                        {
+                            Debug.LogError($"Field \"{{ $field.Name }}\" on message \"{{ $.Name }}\" expected to be wire type {{ $field.Type.WireType }}, was wire type {wireType}");
+                            return DataError.TypeMismatch;
+                        }
+                        {{ if $field.Type.NeedsLength -}}
+                            var length = (int)ProtobufUtil.DecodeVarInt(bytes, ref i);
+                        {{- end }}
+
+                        {{- if eq $field.Type.USharpType uSharpTypeULong }}
+                        var num = ProtobufUtil.DecodeVarInt(bytes, ref i);
+                        token = new DataToken(num);
+                        {{ else if eq $field.Type.USharpType uSharpTypeString }}
+                        token = new DataToken(UTF8.Decode(bytes, i, i + length));
+                        {{ end -}}
+
+                        {{ if $field.Type.NeedsLength -}}
+                            i += length;
+                        {{- end }}
+                        break;
+                    {{ end -}}
+                    default:
+                        Debug.LogError($"Unsupported field number {fieldNumber} on \"{{ $.Name }}\".");
+                        return DataError.TypeMismatch;
+                }
+
+                // Add the field to the dict
+                // TODO: Add support for packed repeated: https://protobuf.dev/programming-guides/encoding/#packed
+                // TODO: Merge embedded message fields together instead of keeping the last one: https://protobuf.dev/programming-guides/encoding/#last-one-wins
+                if (allowMultiple)
+                    obj[key].DataList.Add(token);
+                else
+                    obj[key] = token;
+            }
+
+            // Copy the data from all mutli fields into regular lists.
+            {{ range $field := .Fields -}}
+                {{- if $field.Multiple -}}
+            var {{ $field.Name }}DataList = obj["{{ $field.Name }}"].DataList;
+            var {{ $field.Name }}Arr = new {{ $field.Type.USharpType.CSharpType }}[{{ $field.Name }}DataList.Count];
+            for (int j = 0; j < {{ $field.Name }}Arr.Length; j++)
+                {{ $field.Name }}Arr[j] = {{ $field.Name }}DataList[j].{{ $field.Type.USharpType.UdonTokenAccessor }};
+            obj["{{ $field.Name }}"] = new DataToken({{ $field.Name }}Arr);
+                {{- end -}}
+            {{- end }}
+
+            return obj;
+        }
+
+        {{- range $field := .Fields }}
+
+        public static {{ $field.Type.USharpType.CSharpType }}{{ if $field.Multiple }}[]{{ end }} get{{ $field.Name.PascalCase }}(DataToken obj) =>
+            ({{ $field.Type.USharpType.CSharpType }}{{ if $field.Multiple }}[]{{ end }})ProtobufUtil.GetObj(obj, "{{ $.Name }}", "{{ $field.Name }}", "get{{ $field.Name.PascalCase }}").{{ if $field.Multiple }}Reference{{ else }}{{ $field.Type.USharpType.UdonTokenAccessor }}{{ end }};
+        {{- end }}
+    }

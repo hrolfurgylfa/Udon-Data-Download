@@ -41,44 +41,26 @@ namespace Hroi.UdonDataDownload
             return returnInt;
         }
 
-        public static string GetObjError(DataToken obj, string msgName, string key, string methodName)
+        private static DataToken GetObjError(string err)
+        {
+            Debug.LogError(err);
+            return new DataToken(DataError.TypeMismatch, err);
+        }
+
+        public static DataToken GetObj(DataToken obj, string msgName, string key, string methodName)
         {
             string errEnd = " Are you sure this object came from {msgName}.parse?";
 
             if (obj.TokenType != TokenType.DataDictionary)
-                return $"{methodName} called on object that isn't a DataDictionary." + errEnd;
+                return GetObjError($"{methodName} called on object that isn't a DataDictionary." + errEnd);
 
             if (!obj.DataDictionary.ContainsKey("__type"))
-                return $"{methodName} called on object that doesn't have a __type." + errEnd;
+                return GetObjError($"{methodName} called on object that doesn't have a __type." + errEnd);
 
             if (obj.DataDictionary["__type"] != msgName)
-                return $"{methodName} called on object of type {obj.DataDictionary["__type"]} instead of {msgName}." + errEnd;
+                return GetObjError($"{methodName} called on object of type {obj.DataDictionary["__type"]} instead of {msgName}." + errEnd);
 
-            return null;
-        }
-
-        public static DataToken GetObjSingle(DataToken obj, string msgName, string key, string methodName)
-        {
-            string err = GetObjError(obj, msgName, key, methodName);
-            if (err == null)
-                return obj.DataDictionary[key];
-            else
-            {
-                Debug.LogError(err);
-                return new DataToken(DataError.TypeMismatch, err);
-            }
-        }
-
-        public static object GetObjList(DataToken obj, string msgName, string key, string methodName)
-        {
-            string err = GetObjError(obj, msgName, key, methodName);
-            if (err == null)
-                return obj.DataDictionary[key].Reference;
-            else
-            {
-                Debug.LogError(err);
-                return null;
-            }
+            return obj.DataDictionary[key];
         }
     }
 }

@@ -45,3 +45,6 @@ sysinfo.txt
 *.zip.meta
 *.7z
 *.7z.meta
+
+# Compiled exe files
+*.exe

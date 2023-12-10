@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
-using Hroi.UdonDataDownload;
+using Hroi.UdonDataDownload.Generated;
 using NUnit.Framework.Internal;
 
 namespace Tests
