@@ -1,0 +1,15 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+syntax = "proto3";
+
+message Message2 {
+  repeated User objects = 1;
+  string path = 2;
+}
+
+message User {
+  repeated uint64 numbers = 1 [ packed = false ];
+  string name = 2;
+}

@@ -23,7 +23,7 @@ namespace Tests
                 1: 16384
                 2: {""Sæl Veröld!""}
             ");
-            var obj = Message1.Parse(bytes, ref i, bytes.Length);
+            var obj = Message1.Parse(bytes, i, bytes.Length);
             var numbers = Message1.getNumbers(obj);
             Assert.AreEqual(16384, numbers[0]);
             Assert.AreEqual(1, numbers.Length);
@@ -43,7 +43,7 @@ namespace Tests
                 2: {""Sæl Veröld!""}
                 1: 23452151252155231
             ");
-            var obj = Message1.Parse(bytes, ref i, bytes.Length);
+            var obj = Message1.Parse(bytes, i, bytes.Length);
             Assert.AreEqual(new ulong[] { 2, 16384, 16383, 1, 23452151252155231 }, Message1.getNumbers(obj));
             Assert.AreEqual("Sæl Veröld!", Message1.getName(obj));
         }

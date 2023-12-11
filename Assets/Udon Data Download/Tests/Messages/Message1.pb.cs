@@ -8,7 +8,7 @@ namespace Hroi.UdonDataDownload.Generated
 {
     public class Message1
     {
-        public static DataToken Parse(byte[] bytes, ref int i, int end)
+        public static DataToken Parse(byte[] bytes, int i, int end)
         {
             var obj = new DataDictionary();
             obj["__type"] = "Message1";
@@ -28,7 +28,7 @@ namespace Hroi.UdonDataDownload.Generated
                 string key;
                 switch (fieldNumber)
                 {
-                    case 1:
+                    case 1: {
                         key = "numbers";
                         allowMultiple = true;
                         if (wireType != 0)
@@ -41,7 +41,8 @@ namespace Hroi.UdonDataDownload.Generated
                         token = new DataToken(num);
                         
                         break;
-                    case 2:
+                    }
+                    case 2: {
                         key = "name";
                         allowMultiple = false;
                         if (wireType != 2)
@@ -53,6 +54,7 @@ namespace Hroi.UdonDataDownload.Generated
                         token = new DataToken(UTF8.Decode(bytes, i, i + length));
                         i += length;
                         break;
+                    }
                     default:
                         Debug.LogError($"Unsupported field number {fieldNumber} on \"Message1\".");
                         return DataError.TypeMismatch;
@@ -71,7 +73,7 @@ namespace Hroi.UdonDataDownload.Generated
             var numbersDataList = obj["numbers"].DataList;
             var numbersArr = new ulong[numbersDataList.Count];
             for (int j = 0; j < numbersArr.Length; j++)
-                numbersArr[j] = numbersDataList[j].ULong;
+                numbersArr[j] = (ulong)numbersDataList[j].ULong;
             obj["numbers"] = new DataToken(numbersArr);
 
             return obj;

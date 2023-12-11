@@ -2,7 +2,7 @@
 
     public class {{ $.Name }}
     {
-        public static DataToken Parse(byte[] bytes, ref int i, int end)
+        public static DataToken Parse(byte[] bytes, int i, int end)
         {
             var obj = new DataDictionary();
             obj["__type"] = "{{ $.Name }}";
@@ -27,7 +27,7 @@
                 switch (fieldNumber)
                 {
                     {{ range $field := .Fields -}}
-                    case {{ $field.Number }}:
+                    case {{ $field.Number }}: {
                         key = "{{ $field.Name }}";
                         allowMultiple = {{ $field.Multiple }};
                         if (wireType != {{ $field.Type.WireType }})
@@ -39,17 +39,20 @@
                             var length = (int)ProtobufUtil.DecodeVarInt(bytes, ref i);
                         {{- end }}
 
-                        {{- if eq $field.Type.USharpType uSharpTypeULong }}
+                        {{- if eq $field.Type.Enum uSharpTypeULong }}
                         var num = ProtobufUtil.DecodeVarInt(bytes, ref i);
                         token = new DataToken(num);
-                        {{ else if eq $field.Type.USharpType uSharpTypeString }}
+                        {{ else if eq $field.Type.Enum uSharpTypeString }}
                         token = new DataToken(UTF8.Decode(bytes, i, i + length));
+                        {{ else if eq $field.Type.Enum uSharpTypeMessage }}
+                        token = {{ $field.Type.CSharpTypeStr }}.Parse(bytes, i, i + length);
                         {{ end -}}
 
                         {{ if $field.Type.NeedsLength -}}
                             i += length;
                         {{- end }}
                         break;
+                    }
                     {{ end -}}
                     default:
                         Debug.LogError($"Unsupported field number {fieldNumber} on \"{{ $.Name }}\".");
@@ -69,9 +72,9 @@
             {{ range $field := .Fields -}}
                 {{- if $field.Multiple -}}
             var {{ $field.Name }}DataList = obj["{{ $field.Name }}"].DataList;
-            var {{ $field.Name }}Arr = new {{ $field.Type.USharpType.CSharpType }}[{{ $field.Name }}DataList.Count];
+            var {{ $field.Name }}Arr = new {{ $field.Type.CSharpType }}[{{ $field.Name }}DataList.Count];
             for (int j = 0; j < {{ $field.Name }}Arr.Length; j++)
-                {{ $field.Name }}Arr[j] = {{ $field.Name }}DataList[j].{{ $field.Type.USharpType.UdonTokenAccessor }};
+                {{ $field.Name }}Arr[j] = ({{ $field.Type.CSharpType }}){{ $field.Name }}DataList[j].{{ $field.Type.UdonTokenAccessor }};
             obj["{{ $field.Name }}"] = new DataToken({{ $field.Name }}Arr);
                 {{- end -}}
             {{- end }}
@@ -81,7 +84,7 @@
 
         {{- range $field := .Fields }}
 
-        public static {{ $field.Type.USharpType.CSharpType }}{{ if $field.Multiple }}[]{{ end }} get{{ $field.Name.PascalCase }}(DataToken obj) =>
-            ({{ $field.Type.USharpType.CSharpType }}{{ if $field.Multiple }}[]{{ end }})ProtobufUtil.GetObj(obj, "{{ $.Name }}", "{{ $field.Name }}", "get{{ $field.Name.PascalCase }}").{{ if $field.Multiple }}Reference{{ else }}{{ $field.Type.USharpType.UdonTokenAccessor }}{{ end }};
+        public static {{ $field.Type.CSharpType }}{{ if $field.Multiple }}[]{{ end }} get{{ $field.Name.PascalCase }}(DataToken obj) =>
+            ({{ $field.Type.CSharpType }}{{ if $field.Multiple }}[]{{ end }})ProtobufUtil.GetObj(obj, "{{ $.Name }}", "{{ $field.Name }}", "get{{ $field.Name.PascalCase }}").{{ if $field.Multiple }}Reference{{ else }}{{ $field.Type.UdonTokenAccessor }}{{ end }};
         {{- end }}
     }
